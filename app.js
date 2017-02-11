@@ -22,7 +22,7 @@ var bodyParser = require('body-parser'); // parser for post requests
 var Conversation = require('watson-developer-cloud/conversation/v1'); // watson sdk
 
 var request = require('request');
-var wait=require('wait.for');
+var deasync = require('deasync');
 
 var app = express();
 app.use(express.static('./public')); // load UI from public folder
@@ -34,8 +34,8 @@ var conversation = new Conversation({
   // After that, the SDK will fall back to the bluemix-provided VCAP_SERVICES environment property
 
 // Bootstrap application settings
-  // username: '<username>',
-  // password: '<password>',
+   username: 'd09caa32-5807-429a-9357-0c48c4f0d9ca',
+   password: 'SsFTuRM3K4Ki',
   url: 'https://gateway.watsonplatform.net/conversation/api',
   version_date: '2016-10-21',
   version: 'v1'
@@ -43,7 +43,7 @@ var conversation = new Conversation({
 
 // Endpoint to be call from the client side
 app.post('/api/message', function(req, res) {
-  var workspace = process.env.WORKSPACE_ID || '<workspace-id>';
+  var workspace = process.env.WORKSPACE_ID || '61913971-39c2-4997-bc9d-21b379de2721';
   if (!workspace || workspace === '<workspace-id>') {
     return res.json({
       'output': {
@@ -62,23 +62,17 @@ app.post('/api/message', function(req, res) {
     if (err) {
       return res.status(err.code || 500).json(err);
     }
-    console.log(data);
+    //console.log(data);
     return res.json(updateMessage(payload, data));
-    r = res.json(updateMessage(payload, data));
-    console.log(r);
-    return r;
   });
 });
-
 /**
  * Updates the response text using the intent confidence
  * @param  {Object} input The request to the Conversation service
  * @param  {Object} response The response from the Conversation service
  * @return {Object}          The response with the updated message
  */
-function dbdata(str){
-	request.get(str);
-}
+
 
 function updateMessage(input, response) {
   var responseText = null;
@@ -94,13 +88,21 @@ function updateMessage(input, response) {
     // user's intent . In these cases it is usually best to return a disambiguation message
     // ('I did not understand your intent, please rephrase your question', etc..)
     if(intent.intent == 'call'){
-    	responseText += 'its a call'; 
-    	response.output.db.body = wait.dbdata('http://cure.mybluemix.net/api/'+response.entities[0].entity+'/findOne?filter[where][name]='+response.entities[0].value);
+      request('http://cure.mybluemix.net/api/'+response.entities[0].entity+'/findOne?filter[where][name]='+response.entities[0].value, function(err, r, body){
+        response.output.db = {};
+        console.log(body);
+        response.output.db.body = body;
+      });
+      while(response.output.db === undefined) {
+        deasync.runLoopOnce();
+      }
+      console.log('******phone: ')
+      console.log(typeof(response.output.db.body));
+      response.output.text += ' ' + JSON.parse(response.output.db.body).phone;      
     }
   }
-  console.log('*************about to return skjdfhlksjdhflksjdhflkjdshflidskhflkjdshflkjds');
   response.output.proctext = responseText;
-    return response;
+  return response;
   }
   if (response.intents && response.intents[0]) {
     var intent = response.intents[0];
