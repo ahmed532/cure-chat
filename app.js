@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/*eslint-env node */
 'use strict';
 
 var express = require('express'); // app server
@@ -21,6 +22,7 @@ var bodyParser = require('body-parser'); // parser for post requests
 var Conversation = require('watson-developer-cloud/conversation/v1'); // watson sdk
 
 var request = require('request');
+var wait=require('wait.for');
 
 var app = express();
 app.use(express.static('./public')); // load UI from public folder
@@ -74,12 +76,17 @@ app.post('/api/message', function(req, res) {
  * @param  {Object} response The response from the Conversation service
  * @return {Object}          The response with the updated message
  */
+function dbdata(str){
+	request.get(str);
+}
+
 function updateMessage(input, response) {
   var responseText = null;
   if (!response.output) {
     response.output = {};
   } else {
   	if (response.intents && response.intents[0]) {
+  	responseText = '';
     var intent = response.intents[0];
     // Depending on the confidence of the response the app can return different messages.
     // The confidence will vary depending on how well the system is trained. The service will always try to assign
@@ -87,13 +94,11 @@ function updateMessage(input, response) {
     // user's intent . In these cases it is usually best to return a disambiguation message
     // ('I did not understand your intent, please rephrase your question', etc..)
     if(intent.intent == 'call'){
-    	request('http://cure.mybluemix.net/api/'+response.entities[0].entity+'/findOne?filter[where][name]='+response.entities[0].value, function (error, r, body) {
- 			 if (!error && response.statusCode == 200) {
- 			 	response.output.text += body;
-		    }
-		});
+    	responseText += 'its a call'; 
+    	response.output.db.body = wait.dbdata('http://cure.mybluemix.net/api/'+response.entities[0].entity+'/findOne?filter[where][name]='+response.entities[0].value);
     }
   }
+  console.log('*************about to return skjdfhlksjdhflksjdhflkjdshflidskhflkjdshflkjds');
   response.output.proctext = responseText;
     return response;
   }
