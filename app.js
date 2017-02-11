@@ -20,9 +20,9 @@ var express = require('express'); // app server
 var bodyParser = require('body-parser'); // parser for post requests
 var Conversation = require('watson-developer-cloud/conversation/v1'); // watson sdk
 
-var app = express();
+var request = require('request');
 
-// Bootstrap application settings
+var app = express();
 app.use(express.static('./public')); // load UI from public folder
 app.use(bodyParser.json());
 
@@ -30,6 +30,8 @@ app.use(bodyParser.json());
 var conversation = new Conversation({
   // If unspecified here, the CONVERSATION_USERNAME and CONVERSATION_PASSWORD env properties will be checked
   // After that, the SDK will fall back to the bluemix-provided VCAP_SERVICES environment property
+
+// Bootstrap application settings
   // username: '<username>',
   // password: '<password>',
   url: 'https://gateway.watsonplatform.net/conversation/api',
@@ -58,7 +60,11 @@ app.post('/api/message', function(req, res) {
     if (err) {
       return res.status(err.code || 500).json(err);
     }
+    console.log(data);
     return res.json(updateMessage(payload, data));
+    r = res.json(updateMessage(payload, data));
+    console.log(r);
+    return r;
   });
 });
 
@@ -73,6 +79,22 @@ function updateMessage(input, response) {
   if (!response.output) {
     response.output = {};
   } else {
+  	if (response.intents && response.intents[0]) {
+    var intent = response.intents[0];
+    // Depending on the confidence of the response the app can return different messages.
+    // The confidence will vary depending on how well the system is trained. The service will always try to assign
+    // a class/intent to the input. If the confidence is low, then it suggests the service is unsure of the
+    // user's intent . In these cases it is usually best to return a disambiguation message
+    // ('I did not understand your intent, please rephrase your question', etc..)
+    if(intent.intent == 'call'){
+    	request('http://cure.mybluemix.net/api/'+response.entities[0].entity+'/findOne?filter[where][name]='+response.entities[0].value, function (error, r, body) {
+ 			 if (!error && response.statusCode == 200) {
+ 			 	response.output.text += body;
+		    }
+		});
+    }
+  }
+  response.output.proctext = responseText;
     return response;
   }
   if (response.intents && response.intents[0]) {
