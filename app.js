@@ -112,6 +112,30 @@ function updateMessage(input, response) {
         else if(intent.intent == 'get_rate'){
           response.output.text += ' ' + response.output.db.body['rate']['score'] + '/10 from ' + response.output.db.body['rate']['n'] + ' users.';
         }
+        else if(intent.intent == 'user_rate'){
+        request.post({url:'https://mariam2.mybluemix.net/analyze', form: {"text":input.input.text}},
+        //request.post({url:'https://mariam2.mybluemix.net/analyze', form: {"text":'anglo american is a bad hospital'}},
+         function(err,httpResponse,body){
+          console.log("analysis");
+          console.log(err);
+          //console.log(httpResponse);
+          console.log(body);
+          body = JSON.parse(body);
+          var user_rate = body.docSentiment.score;
+          var old_rate = response.output.db.body.rate.score;
+          var old_n_users = response.output.db.body.rate.n;
+          var hospital_id = response.output.db.body.id;
+          console.log('user rate: ' + user_rate);
+          var new_n_users = old_n_users + 1;
+          var new_rate = (old_rate*old_n_users+user_rate*10)/new_n_users;
+          request.patch({url:'http://cure.mybluemix.net/api/hospitals/'+hospital_id, form: {"rate":{"n":new_n_users, "score":new_rate}}}, 
+            function(err,httpResponse,body){
+              console.log("Patched hospital");
+              //console.log(httpResponse);
+              console.log(body);
+            });
+         });
+        }
         else{
           response.output.text += ' ' + response.output.db.body[intent_db_data[intent.intent]];     
         }
