@@ -121,9 +121,9 @@ function updateMessage(input, response) {
           //console.log(httpResponse);
           console.log(body);
           body = JSON.parse(body);
-          var user_rate = parseInt(body.docSentiment.score);
-          var old_rate = ParseInt(response.output.db.body.rate.score);
-          var old_n_users = ParseInt(response.output.db.body.rate.n);
+          var user_rate = parseFloat(body.docSentiment.score);
+          var old_rate = parseFloat(response.output.db.body.rate.score);
+          var old_n_users = parseFloat(response.output.db.body.rate.n);
           var hospital_id = response.output.db.body.id;
           console.log('user rate: ' + user_rate);
           var new_n_users = old_n_users + 1;
