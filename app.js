@@ -77,7 +77,8 @@ var intent_db_data = {'call': 'phone',
                    'get_location': 'location',
                    'email': 'email',
                    'get_rate': 'rate',
-                   'user_rate': 'rate'}
+                   'user_rate': 'rate',
+                   'get_special': 'specialization'}
 
 function updateMessage(input, response) {
   var responseText = null;
