@@ -75,7 +75,9 @@ app.post('/api/message', function(req, res) {
 var intent_db_data = {'call': 'phone',
                    'send_message': 'phone',
                    'get_location': 'location',
-                   'email': 'email'}
+                   'email': 'email',
+                   'get_rate': 'rate',
+                   'user_rate': 'rate'}
 
 function updateMessage(input, response) {
   var responseText = null;
@@ -106,6 +108,9 @@ function updateMessage(input, response) {
         console.log("**Request finished\n\n\n");
         if(intent.intent == 'get_location'){
           response.output.map = response.output.db.body[intent_db_data[intent.intent]];
+        }
+        else if(intent.intent == 'get_rate'){
+          response.output.text += ' ' + response.output.db.body['rate']['score'] + '/10 from ' + response.output.db.body['rate']['n'] + ' users.';
         }
         else{
           response.output.text += ' ' + response.output.db.body[intent_db_data[intent.intent]];     

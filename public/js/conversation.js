@@ -196,7 +196,7 @@ var ConversationPanel = (function() {
   }
 
   function guid() {
-    return s4() + s4() + '_' + s4() + '_' + s4() + '_' +
+    return 'f' + s4() + s4() + '_' + s4() + '_' + s4() + '_' +
       s4() + '_' + s4() + s4() + s4();
   }
 
