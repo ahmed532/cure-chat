@@ -72,7 +72,10 @@ app.post('/api/message', function(req, res) {
  * @param  {Object} response The response from the Conversation service
  * @return {Object}          The response with the updated message
  */
-
+var intent_db_data = {'call': 'phone',
+                   'send_message': 'phone',
+                   'get_location': 'location',
+                   'email': 'email'}
 
 function updateMessage(input, response) {
   var responseText = null;
@@ -87,18 +90,27 @@ function updateMessage(input, response) {
     // a class/intent to the input. If the confidence is low, then it suggests the service is unsure of the
     // user's intent . In these cases it is usually best to return a disambiguation message
     // ('I did not understand your intent, please rephrase your question', etc..)
-    if(intent.intent == 'call'){
-      request('http://cure.mybluemix.net/api/'+response.entities[0].entity+'/findOne?filter[where][name]='+response.entities[0].value, function(err, r, body){
-        response.output.db = {};
-        console.log(body);
-        response.output.db.body = body;
-      });
-      while(response.output.db === undefined) {
-        deasync.runLoopOnce();
-      }
-      console.log('******phone: ')
-      console.log(typeof(response.output.db.body));
-      response.output.text += ' ' + JSON.parse(response.output.db.body).phone;      
+    if(intent.intent in intent_db_data){
+      console.log(intent.intent);
+      if(response.entities.length > 0){
+        console.log(response.entities);
+        request('http://cure.mybluemix.net/api/'+response.entities[0].entity+'/findOne?filter[where][name]='+response.entities[0].value, function(err, r, body){
+          response.output.db = {};
+          //console.log(body);
+          response.output.db.body = JSON.parse(body);
+        });
+        console.log("request is in call back.")
+        while(response.output.db === undefined) {
+          deasync.runLoopOnce();
+        }
+        console.log("**Request finished\n\n\n");
+        if(intent.intent == 'get_location'){
+          response.output.map = response.output.db.body[intent_db_data[intent.intent]];
+        }
+        else{
+          response.output.text += ' ' + response.output.db.body[intent_db_data[intent.intent]];     
+        }
+      } 
     }
   }
   response.output.proctext = responseText;

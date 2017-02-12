@@ -119,7 +119,12 @@ var ConversationPanel = (function() {
       || (newPayload.output && newPayload.output.text);
     if (isUser !== null && textExists) {
       // Create new message DOM element
-      var messageDivs = buildMessageDomElements(newPayload, isUser);
+      if(!isUser && newPayload.output.map){
+        var messageDivs = buildMapDomElements(newPayload, isUser);
+      }
+      else{
+        var messageDivs = buildMessageDomElements(newPayload, isUser);
+      }
       var chatBoxElement = document.querySelector(settings.selectors.chatBox);
       var previousLatest = chatBoxElement.querySelectorAll((isUser
               ? settings.selectors.fromUser : settings.selectors.fromWatson)
@@ -180,6 +185,79 @@ var ConversationPanel = (function() {
                 'tagName': 'p',
                 'text': currentText
               }]
+            }]
+          }]
+        };
+        messageArray.push(Common.buildDomElement(messageJson));
+      }
+    });
+
+    return messageArray;
+  }
+
+  function guid() {
+    return s4() + s4() + '_' + s4() + '_' + s4() + '_' +
+      s4() + '_' + s4() + s4() + s4();
+  }
+
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+
+  function mapScriptText(uuid, coor){
+    t = 'function ' + uuid.toString() + '(){'
+    t +=  'var uluru = {lat: ';
+    t += coor.lat.toString() + ',lng: ' + coor.lng.toString() + '};';
+    t += 'var map = new google.maps.Map(document.getElementById(\'';
+    t += uuid + '\'), {';
+    t += 'zoom: 4,\
+          center: uluru\
+        });\
+        var marker = new google.maps.Marker({\
+          position: uluru,\
+          map: map\
+        });\
+      }';
+      console.log(t);
+    return t;
+  }
+
+  function buildMapDomElements(newPayload, isUser) {
+    var textArray = isUser ? newPayload.input.text : newPayload.output.text;
+    if (Object.prototype.toString.call( textArray ) !== '[object Array]') {
+      textArray = [textArray];
+    }
+    var messageArray = [];
+    var uuid = guid();
+    textArray.forEach(function(currentText) {
+      if (currentText) {
+        var messageJson = {
+          // <div class='segments'>
+          'tagName': 'div',
+          'classNames': ['segments'],
+          'children': [{
+            // <div class='from-user/from-watson latest'>
+            'tagName': 'div',
+            'classNames': [(isUser ? 'from-user' : 'from-watson'), 'latest', ((messageArray.length === 0) ? 'top' : 'sub')],
+            'children': [
+              {// <div class='message-inner'>
+              'tagName': 'div',
+              'classNames': ['message-inner'],
+              'children': [{
+                // <div>#Map div#</div>
+                'tagName': 'div',
+                'attributes': [{'name':'id', 'value':uuid},
+                               {'name':'style', 'value':'height:300px; width:300px;'}]
+              }]},
+              {'tagName': 'script',
+               'text': mapScriptText(uuid, newPayload.output.map)
+              },
+              {'tagName': 'script',
+              'attributes': [{'name':'src', 'value':'https://maps.googleapis.com/maps/api/js?key=AIzaSyBn8leEfnWNqWRG-ZQd6ThlWJiYdlKMnjg&callback='+uuid},
+                             {'name': 'async', 'value':''},
+                             {'name': 'defer', 'value': ''}]
             }]
           }]
         };
